@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module name="Smart Connector"
+    category="SELECT"
+    prefix="custom-log"
+    doc:description="A custom logger in Mule is a user-defined component that allows for tailored logging functionality, enabling enhanced tracking and debugging of application processes."
+    xmlns="http://www.mulesoft.org/schema/mule/module"
+    xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+    xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+    xmlns:tns="http://www.mulesoft.org/schema/mule/custom-log"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+    xsi:schemaLocation="http://www.mulesoft.org/schema/mule/module http://www.mulesoft.org/schema/mule/module/current/mule-module.xsd
+                        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+                        http://www.mulesoft.org/schema/mule/module-hello http://www.mulesoft.org/schema/mule/module-hello/current/mule-module-hello.xsd
+                        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+
+    <property name="Environment" type="string" displayName="Environment"
+        doc:description="Specifies the environment in which the application is running (e.g., Development, Production)."
+        defaultValue="#['DEV']" order="1" />
+    <property name="ApplicationName" type="string" displayName="Application Name"
+        doc:description="Defines the name of the application logging the information." order="2" />
+    <property name="ApplicationVersion" type="string" displayName="Application Version"
+        doc:description="Indicates the version of the application for tracking and debugging purposes."
+        order="3" />
+    <property name="CorrelationId" type="string" displayName="CorrelationId"
+        doc:description="Unique identifier for correlating logs across different systems and components."
+        password="false" order="4" />
+
+    <operation name="Log" doc:description="Custom Log">
+        <parameters>
+            <parameter name="Message" type="string" displayName="Message"
+                doc:description="The log message providing details about the event or error being logged."
+                order="1" />
+            <parameter name="Content" type="string" displayName="Content" role="CONTENT"
+                defaultValue="#[output application/json --- payload]"
+                doc:description="Additional content or data to be logged, typically in JSON format for structured logging."
+                order="2" />
+            <parameter name="TracePoint" type="tracepoint-type" defaultValue="START"
+                displayName="Trace Point"
+                doc:description="Identifies the point in the application where the log was generated (e.g., method or process name)."
+                order="3" />
+            <parameter name="LogLevel" type="log-type" defaultValue="INFO" displayName="Log Level"
+                doc:description="The severity level of the log (e.g., INFO, DEBUG, ERROR, WARN)."
+                order="4" />
+            <parameter name="LogCategory" type="string" displayName="Log Category" use="OPTIONAL" tab="Advanced"
+                doc:description="Category under which the log is categorized, such as system, database, network, etc."
+                order="5" />
+        </parameters>
+        <body>
+            <ee:transform>
+                <ee:message>
+                    <ee:set-payload><![CDATA[
+                    %dw 2.0
+                    output application/json encoding='UTF-8'
+                    ---
+                    {
+                        "Log Level" : vars.LogLevel,
+                        "Log Category" : vars.LogCategory,
+                        "Message" : vars.Message
+                    }
+                    ]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+            <mule:choice doc:name="Choice" >
+                <mule:when expression="#[vars.LogLevel == 'INFO']">
+                    <mule:logger level="INFO" message="#[output application/json --- payload]" category="" />
+                </mule:when>
+                <mule:when expression="#[vars.LogLevel == 'DEBUG']">
+                    <mule:logger level="DEBUG" message="#[output application/json --- payload]" category="com.shegu.Logger" />
+                </mule:when>
+                <mule:when expression="#[vars.LogLevel == 'WARN']">
+                    <mule:logger level="WARN" message="#[output application/json --- payload]" category="com.shegu.Logger" />
+                </mule:when>
+                <mule:when expression="#[vars.LogLevel == 'ERROR']">
+                    <mule:logger level="ERROR" message="#[output application/json --- payload]" category="com.shegu.Logger" />
+                </mule:when>
+                <mule:when expression="#[vars.LogLevel == 'TRACE']">
+                    <mule:logger level="TRACE" message="#[output application/json --- payload]" category="com.shegu.Logger" />
+                </mule:when>
+                <mule:otherwise>
+                    <mule:logger level="INFO" message="#[output application/json --- payload]" category="com.shegu.Logger" />
+                </mule:otherwise>
+		    </mule:choice>
+        </body>
+        <errors>
+            <error type="ANY"/>
+      </errors>
+    </operation>
+
+</module>
